@@ -1,0 +1,14 @@
+{
+  "enabled": true,
+  "name": "Fridge UI guard",
+  "description": "When the UI changes: check escaping, layering, the storage schema, the light colourful theme and accessibility.",
+  "version": "1",
+  "when": {
+    "type": "fileEdited",
+    "patterns": ["app.js", "index.html", "style.css"]
+  },
+  "then": {
+    "type": "askAgent",
+    "prompt": "A UI file (app.js, index.html or style.css) was just edited. Review only the changed parts against .kiro/steering/fridge-graveyard.md:\n- Security: every user-provided string inserted via innerHTML goes through esc(). No network calls, no remote scripts or images.\n- Layering: business rules (dates, status, matching, stats) live in logic.js, not app.js. Every state change calls saveState() and then render().\n- Storage: if the state shape changed, SCHEMA_VERSION is bumped and Fridge.sanitiseState still reads old backups.\n- Theme: white background, colour tokens only (--green/--orange/--purple/--red/--blue and their -tint), consistent colour meaning, ink-on-tint contrast >= 4.5:1, a dark overlay for text on photos. New images are local files in assets/ with alt=\"\" (or real alt text if they carry meaning) and loading=\"lazy\" below the fold.\n- Accessibility: labelled inputs, aria-label with the item name on icon buttons, status not conveyed by colour or emoji alone, emoji aria-hidden, a visible focus ring, 44 px targets, no horizontal scroll at 360 px.\nFix clear violations directly. Reply with a short list: OK items, and anything you fixed or that needs a decision."
+  }
+}

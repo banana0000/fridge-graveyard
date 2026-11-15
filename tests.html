@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fridge Graveyard tests</title>
+<style>
+  body { font: 15px/1.5 system-ui, sans-serif; background: #fff; color: #1d1b26; padding: 16px; max-width: 900px; margin: 0 auto; }
+  h1 { color: #15803d; }
+  table { border-collapse: collapse; width: 100%; }
+  th, td { border-bottom: 1px solid #e6e4ee; padding: 5px 8px; text-align: left; vertical-align: top; }
+  .pass { color: #15803d; } .fail { color: #be123c; font-weight: 700; }
+  #summary { font-size: 20px; font-weight: 700; }
+</style>
+</head>
+<body>
+<h1>🪦 Logic tests</h1>
+<p id="summary" role="status">Running…</p>
+<table>
+  <thead><tr><th scope="col">Group</th><th scope="col">Check</th><th scope="col">Expected</th><th scope="col">Got</th><th scope="col">Result</th></tr></thead>
+  <tbody id="rows"></tbody>
+</table>
+
+<script src="data.js"></script>
+<script src="logic.js"></script>
+<script>
+'use strict';
+const rows = [];
+let passed = 0, failed = 0;
+const esc = s => String(s).replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
+const show = v => esc(typeof v === 'string' ? v : JSON.stringify(v));
+
+function eq(group, label, expected, got) {
+  const ok = JSON.stringify(expected) === JSON.stringify(got);
+  ok ? passed++ : failed++;
+  rows.push(`<tr><td>${esc(group)}</td><td>${esc(label)}</td><td>${show(expected)}</td><td>${show(got)}</td>
+    <td class="${ok ? 'pass' : 'fail'}">${ok ? 'pass' : 'FAIL'}</td></tr>`);
+}
+function group(name, fn) {
+  try { fn((l, e, g) => eq(name, l, e, g)); }
+  catch (err) { eq(name, 'threw', 'no error', err.message); }
+}
+
+const T = '2026-10-31'; // fixed "today"
+const item = (name, d, extra = {}) => ({ id: name, name, qty: '', location: 'fridge', expiry: Fridge.addDays(T, d), price: null, added: T, ...extra });
+
+group('dates', eq => {
+  eq('addDays +1 across month', '2026-11-01', Fridge.addDays(T, 1));
+  eq('addDays -1', '2026-10-30', Fridge.addDays(T, -1));
+  eq('addDays across year', '2027-01-01', Fridge.addDays('2026-12-31', 1));
+  eq('daysLeft across DST (EU, Mar 29)', 2, Fridge.daysLeft('2026-03-30', '2026-03-28'));
+  eq('daysLeft across DST (EU, Oct 25)', 2, Fridge.daysLeft('2026-10-26', '2026-10-24'));
+  eq('daysLeft past', -3, Fridge.daysLeft('2026-10-28', T));
+  eq('todayISO format', true, /^\d{4}-\d{2}-\d{2}$/.test(Fridge.todayISO()));
+  eq('isISODate rejects junk', false, Fridge.isISODate('31/10/2026'));
+});
+
+group('status', eq => {
+  eq('-1 → dead', 'dead', Fridge.status(-1));
+  eq('0 → zombie', 'zombie', Fridge.status(0));
+  eq('1 → haunted', 'haunted', Fridge.status(1));
+  eq('2 → haunted', 'haunted', Fridge.status(2));
+  eq('3 → fresh', 'fresh', Fridge.status(3));
+  eq('describe -1', 'expired yesterday', Fridge.describe(-1));
+  eq('describe -4', 'expired 4 days ago', Fridge.describe(-4));
+  eq('describe 0', 'expires today', Fridge.describe(0));
+  eq('describe 1', 'expires tomorrow', Fridge.describe(1));
+  eq('describe 5', '5 days left', Fridge.describe(5));
+});
+
+group('recognise', eq => {
+  eq('Eggs → egg', 'egg', Fridge.recognise('Eggs'));
+  eq('eggplant is not egg', null, Fridge.recognise('Eggplant'));
+  eq('Cherry tomatoes → tomato', 'tomato', Fridge.recognise('Cherry tomatoes'));
+  eq('Cheddar → cheese', 'cheese', Fridge.recognise('Mature Cheddar'));
+  eq('Hamburger buns is not ham', null, Fridge.recognise('Hamburger buns'));
+  eq('Sour cream → cream (longest alias)', 'cream', Fridge.recognise('Sour cream'));
+  eq('Hungarian: tojás → egg', 'egg', Fridge.recognise('tojás'));
+  eq('Hungarian: tejföl → cream, not milk', 'cream', Fridge.recognise('Tejföl'));
+  eq('Hungarian: kolbász → sausage', 'sausage', Fridge.recognise('Csabai kolbász'));
+  eq('unknown → null', null, Fridge.recognise('Kimchi'));
+});
+
+group('shelf life', eq => {
+  eq('milk in fridge', { key: 'milk', days: 7 }, Fridge.suggestShelfLife('milk', 'fridge'));
+  eq('chicken in freezer', { key: 'chicken', days: 90 }, Fridge.suggestShelfLife('chicken', 'freezer'));
+  eq('unknown item', { key: null, days: 5 }, Fridge.suggestShelfLife('Kimchi', 'fridge'));
+});
+
+group('sort', eq => {
+  const sorted = Fridge.sortItems([item('Cheese', 10), item('Milk', 1), item('Ham', -2)], T).map(i => i.name);
+  eq('soonest first, expired on top', ['Ham', 'Milk', 'Cheese'], sorted);
+});
+
+group('recipes', eq => {
+  const items = [item('Sliced bread', 1), item('Eggs', 0), item('Milk', 10), item('Ham', -2), item('Bananas', 30)];
+  const m = Fridge.matchRecipes(items, T);
+  eq('returns something', true, m.length > 0);
+  eq('every match rescues an urgent item', true, m.every(x => x.rescues.length > 0));
+  eq('French toast ranks first (bread + eggs urgent)', 'French toast', m[0] && m[0].recipe.name);
+  eq('French toast rescues bread & eggs', ['Sliced bread', 'Eggs'], m[0] && m[0].rescues.map(i => i.name));
+  eq('French toast also uses fresh milk', ['Milk'], m[0] && m[0].alsoUses.map(i => i.name));
+  eq('expired ham is never used', false, m.some(x => [...x.rescues, ...x.alsoUses].some(i => i.name === 'Ham')));
+  eq('no urgent items → no recipes', 0, Fridge.matchRecipes([item('Milk', 10), item('Eggs', 9)], T).length);
+  eq('limit respected', true, Fridge.matchRecipes(items, T, 2).length <= 2);
+});
+
+group('stats', eq => {
+  const h = [
+    { name: 'Milk', outcome: 'eaten', price: 1.2, date: '2026-10-02' },
+    { name: 'Ham', outcome: 'binned', price: 2.8, date: '2026-10-15' },
+    { name: 'Eggs', outcome: 'eaten', price: null, date: '2026-10-30' },
+    { name: 'Old', outcome: 'binned', price: 9, date: '2026-09-30' }, // last month
+  ];
+  const s = Fridge.monthStats(h, T);
+  eq('eaten', 2, s.eaten);
+  eq('binned', 1, s.binned);
+  eq('wasted value', 2.8, s.wastedValue);
+  eq('rescue rate', 67, s.rescueRate);
+  eq('empty month → null rate', null, Fridge.monthStats([], T).rescueRate);
+});
+
+group('import', eq => {
+  const s = Fridge.sanitiseState({
+    items: [
+      { name: ' Milk ', expiry: '2026-11-02', location: 'garage', price: '1.234' },
+      { name: '', expiry: '2026-11-02' },
+      { name: 'Bad date', expiry: 'tomorrow' },
+      { name: '<img src=x onerror=alert(1)>', expiry: '2026-11-03' },
+    ],
+    history: [{ name: 'x', outcome: 'stolen', date: '2026-10-01' }, { name: 'y', outcome: 'eaten', date: '2026-10-01' }],
+    currency: 'BTC',
+  });
+  eq('keeps only valid items', 2, s.items.length);
+  eq('trims names', 'Milk', s.items[0].name);
+  eq('unknown location → fridge', 'fridge', s.items[0].location);
+  eq('price rounded', 1.23, s.items[0].price);
+  eq('names kept as text (escaped at render time)', '<img src=x onerror=alert(1)>', s.items[1].name);
+  eq('invalid history dropped', 1, s.history.length);
+  eq('unknown currency → EUR', 'EUR', s.currency);
+  let threw = false; try { Fridge.sanitiseState({ foo: 1 }); } catch (e) { threw = true; }
+  eq('rejects non-backup', true, threw);
+});
+
+group('data integrity', eq => {
+  const keys = Object.keys(FRIDGE_DATA.INGREDIENTS);
+  const missing = FRIDGE_DATA.RECIPES.flatMap(r => r.uses.filter(u => !keys.includes(u)).map(u => `${r.name}: ${u}`));
+  eq('every recipe ingredient exists', [], missing);
+  const seen = {}, dupes = [];
+  keys.forEach(k => FRIDGE_DATA.INGREDIENTS[k].aliases.forEach(a => { if (seen[a]) dupes.push(a); seen[a] = k; }));
+  eq('no alias used twice', [], dupes);
+  eq('aliases are lowercase', [], Object.keys(seen).filter(a => a !== a.toLowerCase()));
+  eq('every ingredient used by a recipe', [], keys.filter(k => !FRIDGE_DATA.RECIPES.some(r => r.uses.includes(k))));
+  eq('recipe names unique', FRIDGE_DATA.RECIPES.length, new Set(FRIDGE_DATA.RECIPES.map(r => r.name)).size);
+});
+
+document.getElementById('rows').innerHTML = rows.join('');
+const sum = document.getElementById('summary');
+sum.textContent = failed ? `❌ ${failed} failed, ${passed} passed` : `✅ All ${passed} checks passed`;
+sum.className = failed ? 'fail' : 'pass';
+document.title = (failed ? 'FAIL' : 'PASS') + ` ${passed}/${passed + failed}`;
+</script>
+</body>
+</html>

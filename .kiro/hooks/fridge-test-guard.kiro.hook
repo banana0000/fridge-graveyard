@@ -1,0 +1,14 @@
+{
+  "enabled": true,
+  "name": "Fridge test guard",
+  "description": "When logic.js or data.js changes: check purity, the data rules and test coverage, then make sure tests.html still passes.",
+  "version": "1",
+  "when": {
+    "type": "fileEdited",
+    "patterns": ["logic.js", "data.js"]
+  },
+  "then": {
+    "type": "askAgent",
+    "prompt": "logic.js or data.js was just edited. Follow .kiro/steering/fridge-graveyard.md and fridge-graveyard-data.md.\n1. Purity: logic.js must not use document, window, localStorage or a parameterless new Date() outside todayISO. Any function that depends on today takes it as a parameter. New functions are exported in the returned object.\n2. Data: aliases are lowercase and unique, every recipe 'uses' entry is an existing ingredient key, every ingredient is used by at least one recipe, recipe names are unique.\n3. Coverage: every new or changed logic function or branch has a check in tests.html (fixed today 2026-10-31). Add missing checks.\n4. Run `msedge --headless=new --dump-dom file:///<absolute path>/tests.html` and confirm the <title> is PASS n/n. If something fails, fix the code (not the test) unless the test is wrong.\n5. If the check count or the number of ingredients/recipes changed, update README.md and .kiro/specs/fridge-graveyard/design.md.\nReply with a short summary: what you checked, what you fixed, and the final PASS count."
+  }
+}

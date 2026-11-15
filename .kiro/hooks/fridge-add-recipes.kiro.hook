@@ -1,0 +1,13 @@
+{
+  "enabled": true,
+  "name": "Add rescue recipes",
+  "description": "Manual: find perishable ingredients that few recipes use and add new rescue recipes for them.",
+  "version": "1",
+  "when": {
+    "type": "userTriggered"
+  },
+  "then": {
+    "type": "askAgent",
+    "prompt": "Improve recipe coverage in data.js, following .kiro/steering/fridge-graveyard-data.md.\n1. For every ingredient in FRIDGE_DATA.INGREDIENTS, count how many recipes use it. List the ones with days <= 7 that appear in fewer than 3 recipes.\n2. Add 3–5 new, realistic, quick recipes (prefer under 30 min; Hungarian classics welcome) that use those ingredients. Use only existing ingredient keys; unique names; one food emoji; 'how' at most 2 sentences, metric units and °C.\n3. Run tests.html headless and make sure it shows PASS n/n.\n4. Update the recipe count in README.md and design.md.\nReply with a before/after coverage table for the weak ingredients and the names of the new recipes."
+  }
+}

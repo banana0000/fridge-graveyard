@@ -1,0 +1,13 @@
+{
+  "enabled": true,
+  "name": "Fridge spec sync",
+  "description": "After the agent finishes a task: tick off completed tasks and keep the numbers in the README and spec accurate.",
+  "version": "1",
+  "when": {
+    "type": "agentStop"
+  },
+  "then": {
+    "type": "askAgent",
+    "prompt": "Keep the docs in sync with the code. Only edit if something is out of date; otherwise reply 'Spec in sync'.\n1. .kiro/specs/fridge-graveyard/tasks.md: tick [x] the tasks that are now implemented in the code; add a new task if a feature was built that is not listed (with its requirement numbers).\n2. If behaviour changed, update the matching EARS criterion in requirements.md and the relevant section in design.md.\n3. Recount and fix the numbers in README.md and design.md: ingredients (keys in FRIDGE_DATA.INGREDIENTS), recipes (FRIDGE_DATA.RECIPES.length) and test checks (the eq( calls run in tests.html; confirm with the headless PASS n/n title if you can).\nDo not change code in this hook."
+  }
+}

@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fridge Graveyard</title>
+<meta name="description" content="Track what's in your fridge, get warned before food dies, and rescue it with recipes.">
+<meta name="theme-color" content="#ffffff">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<a class="skip" href="#inventory">Skip to your food</a>
+
+<header class="hero">
+  <img class="hero-img" src="assets/hero.jpg" alt="" width="1600" height="600">
+  <div class="hero-text">
+    <h1><span aria-hidden="true">🪦</span> Fridge Graveyard</h1>
+    <p class="tagline">Eat it before it haunts you. Know what's dying in your fridge, and rescue it with a recipe.</p>
+    <ul class="legend" aria-label="What the icons mean">
+      <li class="l-fresh"><span aria-hidden="true">🥬</span> Fresh</li>
+      <li class="l-haunted"><span aria-hidden="true">👻</span> Eat soon</li>
+      <li class="l-zombie"><span aria-hidden="true">🧟</span> Today</li>
+      <li class="l-dead"><span aria-hidden="true">💀</span> Expired</li>
+    </ul>
+  </div>
+</header>
+
+<main>
+  <section aria-labelledby="stats-heading">
+    <h2 id="stats-heading" class="visually-hidden">This month</h2>
+    <ul class="stats" id="stats"></ul>
+  </section>
+
+  <p id="status" role="status" aria-live="polite"></p>
+
+  <section class="panel add-panel" aria-labelledby="add-heading">
+    <img class="side-img" src="assets/shelves.jpg" alt="" width="700" height="700" loading="lazy">
+    <div class="add-body">
+      <h2 id="add-heading"><span aria-hidden="true">🛒</span> Add food</h2>
+      <form id="add-form" novalidate>
+        <div class="field grow">
+          <label for="name">What is it?</label>
+          <input id="name" list="known" required maxlength="60" autocomplete="off" placeholder="e.g. milk, eggs, spinach">
+          <datalist id="known"></datalist>
+        </div>
+        <div class="field">
+          <label for="qty">Amount <span class="opt">(optional)</span></label>
+          <input id="qty" maxlength="20" autocomplete="off" placeholder="1 l">
+        </div>
+        <div class="field">
+          <label for="location">Where?</label>
+          <select id="location">
+            <option value="fridge">Fridge</option>
+            <option value="freezer">Freezer</option>
+            <option value="pantry">Pantry</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="expiry">Use by</label>
+          <input id="expiry" type="date" required>
+        </div>
+        <div class="field">
+          <label for="price">Price <span class="opt">(optional)</span></label>
+          <input id="price" type="number" min="0" step="0.01" inputmode="decimal">
+        </div>
+        <button type="submit" class="primary">Add</button>
+      </form>
+      <p id="suggest" class="hint" aria-live="polite"></p>
+    </div>
+  </section>
+
+  <section class="panel rescue" id="rescue" aria-labelledby="rescue-heading" hidden>
+    <div class="banner">
+      <img src="assets/rescue.jpg" alt="" width="1200" height="420" loading="lazy">
+      <div>
+        <h2 id="rescue-heading"><span aria-hidden="true">🦸</span> Rescue mission</h2>
+        <p>Recipes that use the food that's about to die.</p>
+      </div>
+    </div>
+    <ul class="recipes" id="recipes"></ul>
+  </section>
+
+  <section class="panel" id="inventory" aria-labelledby="inv-heading" tabindex="-1">
+    <h2 id="inv-heading"><span aria-hidden="true">🧊</span> Your food</h2>
+    <div class="filters" role="group" aria-label="Filter by place">
+      <button type="button" data-filter="all" aria-pressed="true">All</button>
+      <button type="button" data-filter="fridge" aria-pressed="false">Fridge</button>
+      <button type="button" data-filter="freezer" aria-pressed="false">Freezer</button>
+      <button type="button" data-filter="pantry" aria-pressed="false">Pantry</button>
+    </div>
+    <ul class="items" id="items"></ul>
+  </section>
+
+  <section class="panel graveyard" id="graveyard" aria-labelledby="grave-heading" hidden>
+    <h2 id="grave-heading"><span aria-hidden="true">🪦</span> The graveyard</h2>
+    <p class="hint">Past its date. Check it first: many "best before" foods are still fine. Then decide its fate.</p>
+    <ul class="tombs" id="tombs"></ul>
+  </section>
+
+  <aside class="fact" aria-labelledby="fact-heading">
+    <img src="assets/bowl.jpg" alt="" width="700" height="700" loading="lazy">
+    <div>
+      <h2 id="fact-heading">Why bother?</h2>
+      <p class="big"><strong>79 kg</strong> of food per person ends up in the bin every year.</p>
+      <p>Households cause about 60% of all food waste, and much of it is food that was simply forgotten at the back of the fridge. <span class="src">Source: UNEP Food Waste Index Report 2024</span></p>
+    </div>
+  </aside>
+</main>
+
+<footer>
+  <div class="settings">
+    <label for="currency">Currency</label>
+    <select id="currency">
+      <option value="EUR">EUR €</option>
+      <option value="USD">USD $</option>
+      <option value="GBP">GBP £</option>
+      <option value="HUF">HUF Ft</option>
+    </select>
+    <button type="button" id="demo">Load demo fridge</button>
+    <button type="button" id="export">Export backup</button>
+    <input type="file" id="import" accept=".json,application/json" class="visually-hidden">
+    <label for="import" class="btn">Import backup</label>
+    <button type="button" id="wipe" class="danger">Delete everything</button>
+  </div>
+  <p class="hint">Your data stays in this browser. Nothing is uploaded. Photos from Unsplash.</p>
+</footer>
+
+<script src="data.js"></script>
+<script src="logic.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
